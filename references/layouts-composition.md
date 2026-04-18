@@ -56,6 +56,46 @@ bottom_callout = {
 
 **架构优势**:省掉"bottom line 独立成页"的稀释 — 一页到位,节奏紧。
 
+---
+
+## 卡片对比度(`contrast` / `highlight_idx`)— 让某一栏突出
+
+默认卡片是"全浅灰+teal 顶条"的均匀样式 — 适合平行并列。但当一栏承载整页
+的"重点 / 结论 / 选择"时,均匀卡片视觉权重不够。参考 `control_matrix`
+左右反差(深 navy vs 浅 lgray)的效果,**`two_col` 和 `three_col` 现在都
+支持对比卡片**:
+
+**two_col 的 `contrast=True`**:指定一栏深 navy(白字),另一栏浅 lgray(navy 字)。
+```python
+ppt.two_col(
+    ...,
+    contrast=True,
+    emphasis='right',   # 'left' 或 'right' — 哪一栏深蓝抓眼
+)
+```
+
+典型用法:
+- **PATH A vs PATH B** / **过去 vs 现在** / **错的做法 vs 对的做法** → 强调对的那栏
+- 一边陈述事实(浅色),一边给出判断(深色)→ 强调判断栏
+
+**three_col 的 `highlight_idx=N`**:指定第 N 栏(0/1/2)为深 navy,其余仍为浅 lgray。
+```python
+ppt.three_col(
+    ...,
+    highlight_idx=1,    # 中间栏深蓝(像 Ainery 页的"成为标准层一部分")
+)
+```
+
+典型用法:
+- **并列三项,其中一项是"终局" / "关键"**(例如 Ainery 三栏中"成为标准层一部分")
+- 三个阶段,最终阶段是目标(结合 FORMULA callout 效果最好)
+
+**何时用对比卡片 vs 均匀卡片**:
+- 均匀(默认)→ 三件事真正并列,没有谁更重要
+- 对比(contrast / highlight_idx)→ 页面有"重点"需要视觉锚定
+
+---
+
 **与其他两份版式文档的分工**
 
 | 文件 | 覆盖什么 | 典型场景 |
