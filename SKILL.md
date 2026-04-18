@@ -44,6 +44,8 @@ Keep this SKILL.md the only thing loaded by default. Pull in a reference **the f
 | `references/design-system.md` | Anytime you need colors, fonts, geometry |
 | `references/layouts-guide.md` | Step 3 (Dummy design) — narrative layouts (cover, chapter, bullets, stats, text_image, two_col, three_col, table, image, text, end) |
 | `references/layouts-analytic.md` | Step 3 — analytic layouts (single chart, 2×2 matrix, waterfall, timeline, insight summary) for logic flow and data reasoning |
+| `references/layouts-composition.md` | Step 3 — **composition layouts + editorial framing** (eyebrow/subtitle/footnote/bottom_callout/notes kwargs) (pyramid, value_chain, control_matrix, not_list, before_after, value_ladder, big_number, quote, number_list, step_grid) |
+| `references/exemplar-strategy-memo.md` | Step 3 — **5 叙事节拍 for strategy memos** (核心结论 · 紧迫感 · 分层战略 · 能力边界 · Bottom line). Teaches the reasoning, not a page-count template. Load when user asks for a 战略思考 / 内部咨询 / 董事会 / IPO 内部讨论 deck |
 | `references/methodology.md` | Phase 1 Step 1–2 — Is/Isn't boundary, MECE Issue Tree, Hypotheses (only if running Full mode) |
 | `references/dummy-pages-spec.md` | Step 3 — Dummy.md format, page dependency types, dependency check dialogue |
 | `references/data-collection.md` | Step 5 — per-page loop, 6-item self-check, data-trail.md format, context management |
@@ -123,6 +125,8 @@ Phase 2 · Design
   Step 3   Dummy Pages with page dependencies            → load dummy-pages-spec.md
                                                           + layouts-guide.md
                                                           + layouts-analytic.md
+                                                          + layouts-composition.md  (strategy-memo composites)
+                                                          + exemplar-strategy-memo.md  (ONLY if user asked for 战略/董事会/IPO 内部讨论)
             Output: <project>_DummyPages_<YYYYMMDD>.md
   Step 4   User confirms Dummy; choose generation mode A / B
 
@@ -205,6 +209,9 @@ The Hypothesis Tree becomes the raw input for Phase 2's slide structure. Save a 
 Read("~/.claude/skills/westwell-ppt/references/dummy-pages-spec.md")
 Read("~/.claude/skills/westwell-ppt/references/layouts-guide.md")
 Read("~/.claude/skills/westwell-ppt/references/layouts-analytic.md")
+Read("~/.claude/skills/westwell-ppt/references/layouts-composition.md")
+# ONLY load the exemplar if the user asked for a strategy memo / 董事会 / IPO 内部讨论:
+Read("~/.claude/skills/westwell-ppt/references/exemplar-strategy-memo.md")
 ```
 
 Then produce `<project>_DummyPages_<YYYYMMDD>.md` with:
@@ -220,9 +227,12 @@ Use the 5 dependency labels from `dummy-pages-spec.md`:
 ✅ 独立    ⏩ 依赖前页    ⏪ 依赖后页    📄 需要文档    ⏸️ 最后生成
 ```
 
-Pick slide types from **both** reference files:
+Pick slide types from **three** reference files:
 - Narrative layouts → `layouts-guide.md` (cover, chapter, bullets, stats, text_image, etc.)
 - Analytic layouts → `layouts-analytic.md` (single chart, 2×2 matrix, waterfall, timeline, insight summary)
+- Composition layouts → `layouts-composition.md` (pyramid, value_chain, control_matrix, not_list, before_after, value_ladder, big_number, quote, number_list) — strategy-memo patterns, use for 战略 / 董事会 / IPO 内部讨论 type decks
+
+For a **strategy memo** specifically (战略思考 / 内部咨询版 / 董事会材料 / IPO 讨论稿), also load `exemplar-strategy-memo.md` — it gives you a battle-tested 18-page storyline (SCQA × 三层战略) you can adapt rather than designing from scratch.
 
 Remember:
 - **Slide titles must be论点, not topic labels** (see the Universal Rules table above)
@@ -379,6 +389,8 @@ This policy is what lets the skill scale to 20–30 page decks without burning c
     ├── design-system.md            ← colors, fonts, geometry
     ├── layouts-guide.md            ← narrative layouts (Westwell built-ins)
     ├── layouts-analytic.md         ← analytic layouts (McKinsey-style, logic flow)
+    ├── layouts-composition.md      ← strategy-memo composites (pyramid, value_chain, control_matrix, not_list, before_after, value_ladder, big_number, quote, number_list)
+    ├── exemplar-strategy-memo.md   ← 5 叙事节拍 for strategy memos (思路,not 页数模板)
     ├── methodology.md              ← Problem Solving (Is/Isn't, Issue Tree, Hypotheses)
     ├── dummy-pages-spec.md         ← Dummy.md format + page dependency system
     ├── data-collection.md          ← per-page loop, self-check, data-trail
