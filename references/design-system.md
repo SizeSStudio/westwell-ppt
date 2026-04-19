@@ -53,9 +53,15 @@ Title placeholder (all content slides):
   Left=0.906  Top=0.394  Width=11.500  Height=1.449
 
 Content safe zone (below title, above WMF decoration at y=5.933"):
-  Left=0.906   Top=1.900
-  Right=12.427  Bottom=5.700      ← conservative safe boundary
-  Width=11.521  Height=3.800
+  Left=0.906   Top=1.800          ← CT (no subtitle)  / 2.00 CT_WITH_SUB
+  Right=12.427  Bottom=5.850      ← CB (no footnote)
+  Width=11.521  Height=4.050
+
+With editorial framing (subtitle / footnote / bottom_callout):
+  CT_WITH_SUB  = 2.00
+  FOOTNOTE_Y   = 5.55   FOOTNOTE_H = 0.30   (ends 5.85)
+  CB_WITH_FN   = 5.48   (content ends 0.07" above footnote top)
+  bottom_callout cb = 5.05   callout at y=5.12, h=0.73  (ends 5.85)
 
 Cover title placeholder (left half only):
   Left=0.689  Top=2.069  Width=8.754  Height=2.705
@@ -64,7 +70,21 @@ Cover subtitle / date:
   Left=0.689  Top=5.070  Width=8.754  Height=1.220
 ```
 
-**Never place content below y = 5.700"** — the WMF circle decoration starts at y ≈ 5.933" and overlaps any content placed lower.
+### Bottom-padding discipline
+
+The template's WMF footer art starts at **y ≈ 5.933"** — this is the hard
+ceiling. Content, footnote strips, and bottom-callout strips should **hug
+that line (0.05–0.10" margin)**, not leave a half-inch of empty band above
+it. Users read that unused band as "the page is too sparse" even on
+density=compact layouts.
+
+Earlier revisions left 0.20–0.40" of empty space below every footnote or
+callout; current constants (CB=5.85, CB_WITH_FN=5.48, FOOTNOTE_Y=5.55,
+bottom_callout at 5.12/0.73) collapse that gap to ~0.08". If you ever
+raise these, raise them together — do not re-introduce the dead band.
+
+**Rule:** never place content below y = 5.85"; never place a callout strip
+whose bottom exceeds y = 5.90".
 
 ---
 

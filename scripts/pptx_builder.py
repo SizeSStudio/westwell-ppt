@@ -69,12 +69,16 @@ RULE_Y   = 1.15              # y-position of horizontal rule
 RULE_H   = 0.05              # rule height (thin line)
 
 # Content area (below rule, above WMF decoration)
+# NOTE on bottom padding: the template's footer WMF starts at y≈5.933, so any
+# cb value only needs to clear it by ~0.05". Keep the content band hugging
+# that line — large empty gaps between content bottom and footer art read
+# as "unused space" (see SKILL.md "bottom-padding discipline").
 CL       = 0.906
 CT       = 1.80              # content top (below rule, with breathing room)
 CR       = 12.427
-CB       = 5.70              # conservative bottom (WMF circles at 5.933")
+CB       = 5.85              # content bottom (WMF circles at 5.933", 0.08" margin)
 CW       = CR - CL           # 11.521"
-CH       = CB - CT           # 3.90"
+CH       = CB - CT           # 4.05"
 
 # Editorial framing (eyebrow / subtitle / footnote) — strategy-memo style.
 EYEBROW_Y   = 0.18
@@ -82,9 +86,9 @@ EYEBROW_H   = 0.28
 SUBTITLE_Y  = 1.28
 SUBTITLE_H  = 0.62
 CT_WITH_SUB = 2.00
-FOOTNOTE_Y  = 5.42
+FOOTNOTE_Y  = 5.55           # footnote strip — ends at 5.85 (just above WMF)
 FOOTNOTE_H  = 0.30
-CB_WITH_FN  = 5.30
+CB_WITH_FN  = 5.48           # content bottom when footnote present (0.07" gap above footnote)
 
 # Cover geometry
 COV_TL, COV_TT = 0.689, 1.70   # cover title (left half, moved up)
@@ -441,11 +445,11 @@ class WestwellPPT:
     def _content_bounds(self, subtitle='', footnote='', bottom_callout=None):
         """Returns (ct, cb, ch) for dynamic content area.
         ct = CT_WITH_SUB if subtitle else CT
-        cb = 4.70 if bottom_callout else CB_WITH_FN if footnote else CB
+        cb = 5.05 if bottom_callout else CB_WITH_FN if footnote else CB
         Returns (ct, cb, cb - ct)."""
         ct = CT_WITH_SUB if subtitle else CT
         if bottom_callout:
-            cb = 4.75          # callout occupies y=4.85–5.63
+            cb = 5.05          # callout occupies y=5.12–5.85 (just above template footer art at 5.933)
         elif footnote:
             cb = CB_WITH_FN
         else:
@@ -466,8 +470,8 @@ class WestwellPPT:
         accordingly; two_col / three_col already reserve the space."""
         if not callout:
             return None
-        y = 4.85
-        h = 0.78
+        y = 5.12           # pushed down to absorb the old empty band
+        h = 0.73           # ends y=5.85, just above template footer art (5.933)
         w = TW
         x = TL
         label = callout.get('label', 'BOTTOM LINE')
@@ -484,11 +488,11 @@ class WestwellPPT:
             label_color = C_TEAL
             text_color  = C_NAVY
         # Label — mono caps 11pt teal
-        self._textbox(slide, x + 0.28, y + 0.12, w - 0.40, 0.26,
+        self._textbox(slide, x + 0.28, y + 0.10, w - 0.40, 0.24,
                       label.upper(), size=11, bold=True, color=label_color,
                       font=F_ACCENT, align=PP_ALIGN.LEFT)
         # Main text — 16pt rich textbox, tight leading
-        self._rich_textbox(slide, x + 0.28, y + 0.36, w - 0.56, h - 0.42,
+        self._rich_textbox(slide, x + 0.28, y + 0.32, w - 0.56, h - 0.38,
                            text, size=16, color=text_color, font=F_BODY)
         return None
 
@@ -969,31 +973,31 @@ class WestwellPPT:
                 numeral_color = C_TEAL
 
             self._rect(slide, x, ct, col_w, ch, fill=card_color, radius=0.10)
-            # Top accent strip
-            self._rect(slide, x, ct, col_w, 0.06, fill=accent_color)
+            # (no top teal strip — cleaner per p14 reference)
 
-            # Optional eyebrow inside the card
-            head_y = ct + 0.22
+            # Eyebrow (mono caps, 12pt) — tight against the heading
+            top_pad = 0.42           # more breathing above eyebrow/head
+            head_y = ct + top_pad
             if col_eyebrow:
-                self._textbox(slide, x + 0.32, ct + 0.22, col_w - 0.48, 0.28,
-                              col_eyebrow, size=11, bold=True,
+                self._textbox(slide, x + 0.36, ct + top_pad, col_w - 0.56, 0.24,
+                              col_eyebrow, size=12, bold=True,
                               color=eyebrow_color, font=F_ACCENT,
-                              align=PP_ALIGN.LEFT)
-                head_y = ct + 0.52
-            # Column heading — bigger if eyebrow present (p14 style)
-            head_size = 22 if col_eyebrow else 19
-            self._textbox(slide, x + 0.32, head_y, col_w - 0.48, 0.60,
+                              align=PP_ALIGN.LEFT, wrap=False)
+                head_y = ct + top_pad + 0.24    # 0.24" gap under eyebrow
+            # Column heading — bigger if eyebrow present
+            head_size = 26 if col_eyebrow else 20
+            self._textbox(slide, x + 0.36, head_y, col_w - 0.56, 0.60,
                           head, size=head_size, bold=True, color=head_color,
                           font=F_BODY, align=PP_ALIGN.LEFT)
 
-            # Thin teal rule
-            rule_y = head_y + 0.72
-            self._hline(slide, x + 0.32, rule_y, col_w - 0.64,
+            # Thin teal rule under heading
+            rule_y = head_y + 0.66
+            self._hline(slide, x + 0.36, rule_y, col_w - 0.72,
                         C_TEAL, 0.022)
 
             # Body — str: paragraph; list: editorial numbered list
-            body_top = rule_y + 0.18
-            body_h = ch - (body_top - ct) - 0.15
+            body_top = rule_y + 0.30      # more air under the rule
+            body_h = ch - (body_top - ct) - 0.30   # more bottom pad too
             if isinstance(body, (list, tuple)):
                 n = len(body)
                 if n > 0:
@@ -1002,17 +1006,18 @@ class WestwellPPT:
                         iy = body_top + i * item_h
                         # Numeral
                         self._textbox(
-                            slide, x + 0.32, iy + 0.04, 0.55, 0.30,
+                            slide, x + 0.36, iy + 0.06, 0.55, 0.30,
                             f'{i+1:02d}', size=13, bold=True,
                             color=numeral_color, font=F_ACCENT,
                             align=PP_ALIGN.LEFT, wrap=False)
-                        # Item body
+                        # Item body — vertically centred in the row
                         self._rich_textbox(
-                            slide, x + 0.95, iy, col_w - 1.10, item_h - 0.04,
-                            item, size=14, color=body_color, font=F_BODY)
+                            slide, x + 0.99, iy + 0.04, col_w - 1.12,
+                            item_h - 0.08,
+                            item, size=15, color=body_color, font=F_BODY)
             else:
                 self._rich_textbox(
-                    slide, x + 0.32, body_top, col_w - 0.48, body_h,
+                    slide, x + 0.36, body_top, col_w - 0.56, body_h,
                     body or '', size=17, color=body_color, font=F_BODY)
 
         if bottom_callout:
@@ -1060,33 +1065,31 @@ class WestwellPPT:
                 card_color = RGBColor(0x1A, 0x2E, 0x7A) if dark else C_LGRAY
                 head_color = C_WHITE if dark else C_NAVY
                 body_color = C_LGRAY if dark else C_BLACK
-            # Card background
+            # Card background (no top teal strip — cleaner)
             self._rect(slide, x, ct, col_w, ch, fill=card_color, radius=0.10)
-            # Teal top accent strip
-            self._rect(slide, x, ct, col_w, 0.06, fill=C_TEAL)
 
             col_eyebrow = col.get('eyebrow', '')
             head = col.get('head', '')
             body = col.get('body', '')
 
-            head_y = ct + 0.22
+            head_y = ct + 0.30
             if col_eyebrow:
-                self._textbox(slide, x + 0.28, ct + 0.22, col_w - 0.40, 0.28,
+                self._textbox(slide, x + 0.32, ct + 0.30, col_w - 0.48, 0.24,
                               col_eyebrow, size=11, bold=True,
                               color=C_TEAL, font=F_ACCENT,
-                              align=PP_ALIGN.LEFT)
-                head_y = ct + 0.52
+                              align=PP_ALIGN.LEFT, wrap=False)
+                head_y = ct + 0.52    # tight 0.22" gap
 
-            head_size = 20 if col_eyebrow else 18
-            self._textbox(slide, x + 0.28, head_y, col_w - 0.40, 0.60,
+            head_size = 22 if col_eyebrow else 18
+            self._textbox(slide, x + 0.32, head_y, col_w - 0.48, 0.52,
                           head, size=head_size, bold=True,
                           color=head_color, font=F_BODY, align=PP_ALIGN.LEFT)
 
-            rule_y = head_y + 0.72
-            self._hline(slide, x + 0.28, rule_y, col_w - 0.56, C_TEAL, 0.022)
+            rule_y = head_y + 0.60
+            self._hline(slide, x + 0.32, rule_y, col_w - 0.64, C_TEAL, 0.022)
 
             # Body — str or list
-            body_top = rule_y + 0.18
+            body_top = rule_y + 0.20
             body_h = ch - (body_top - ct) - 0.15
             if isinstance(body, (list, tuple)):
                 n = len(body)
@@ -1616,9 +1619,11 @@ class WestwellPPT:
                      dark: bool = False,
                      eyebrow: str = '', subtitle: str = '',
                      footnote: str = '', notes: str = ''):
-        """3-4 stage columns with STAGE label, title, tag, progress bar, state.
+        """3-4 stage columns with STAGE label, title, tag, body, progress bar, state.
 
-        stages: list of dicts {title, tag, progress (0-100), state}."""
+        stages: list of dicts {title, tag, body (optional), progress (0-100), state}.
+        Content fills the entire content band — progress bar anchors near the
+        bottom of ``ch`` so stages never cluster at the top of the slide."""
         n = len(stages)
         assert 3 <= n <= 4, 'value_ladder requires 3-4 stages'
         slide = self._new_slide('custom slide1-light', dark=dark, density='compact')
@@ -1631,27 +1636,48 @@ class WestwellPPT:
         total_gaps = chevron_w * (n - 1)
         col_w = (CW - total_gaps) / n
 
+        # Anchor progress bar + state near the bottom so the column fills ch.
+        pb_h = 0.10
+        state_h = 0.32
+        pb_y = ct + ch - state_h - 0.28        # leaves room for state below
+        state_y = pb_y + 0.22
+
+        # Fixed anchors at the top of the column
+        label_y = ct + 0.05
+        title_y = ct + 0.38
+        tag_y   = ct + 1.08
+        rule_y  = ct + 1.50
+        body_y  = ct + 1.66
+        body_h  = max(0.30, pb_y - body_y - 0.15)
+
         for i, stage in enumerate(stages):
             x = CL + i * (col_w + chevron_w)
-            # STAGE label
-            self._textbox(slide, x, ct + 0.05, col_w, 0.28,
+            # STAGE label (top)
+            self._textbox(slide, x, label_y, col_w, 0.28,
                           f'STAGE {i+1:02d}', size=11, bold=True, color=C_TEAL,
                           font=F_ACCENT, align=PP_ALIGN.LEFT)
-            # Stage title
+            # Stage title — bigger so it anchors the column
             title_color = C_WHITE if dark else C_NAVY
-            self._textbox(slide, x, ct + 0.32, col_w, 0.55,
-                          stage.get('title', ''), size=16, bold=True,
+            self._textbox(slide, x, title_y, col_w, 0.70,
+                          stage.get('title', ''), size=20, bold=True,
                           color=title_color, font=F_BODY, align=PP_ALIGN.LEFT)
             # Tag
             if stage.get('tag'):
                 tag_color = C_LGRAY if dark else C_GRAY
-                self._textbox(slide, x, ct + 0.90, col_w, 0.35,
-                              stage.get('tag', ''), size=12, color=tag_color,
+                self._textbox(slide, x, tag_y, col_w, 0.32,
+                              stage.get('tag', ''), size=13, color=tag_color,
                               font=F_BODY, align=PP_ALIGN.LEFT)
+            # Short teal rule between tag and body
+            self._hline(slide, x, rule_y, col_w * 0.35, C_TEAL, 0.022)
+            # Optional body — description of what this stage actually means
+            if stage.get('body') and body_h >= 0.30:
+                body_color = C_LGRAY if dark else C_BLACK
+                self._rich_textbox(
+                    slide, x, body_y, col_w - 0.10, body_h,
+                    stage.get('body', ''), size=13,
+                    color=body_color, font=F_BODY)
             # Progress bar
             prog = max(0, min(100, int(stage.get('progress', 0))))
-            pb_y = ct + 1.38
-            pb_h = 0.10
             self._rect(slide, x, pb_y, col_w, pb_h, fill=C_MGRAY)
             fill_w = col_w * prog / 100
             fill_color = C_NAVY if prog == 100 else C_TEAL
@@ -1659,14 +1685,16 @@ class WestwellPPT:
                 self._rect(slide, x, pb_y, fill_w, pb_h, fill=fill_color)
             # State label
             state_color = C_LGRAY if dark else C_GRAY
-            self._textbox(slide, x, pb_y + 0.20, col_w, 0.35,
-                          stage.get('state', ''), size=12, color=state_color,
+            self._textbox(slide, x, state_y, col_w, state_h,
+                          stage.get('state', ''), size=13, color=state_color,
                           font=F_BODY, align=PP_ALIGN.LEFT)
-            # Chevron between columns
+            # Chevron between columns — vertically centred, taller
             if i < n - 1:
                 cx = x + col_w
-                self._textbox(slide, cx, ct + 0.30, chevron_w, 0.80,
-                              '›', size=32, color=C_GRAY,
+                chev_h = max(0.80, ch * 0.35)
+                self._textbox(slide, cx, ct + (ch - chev_h) / 2,
+                              chevron_w, chev_h,
+                              '›', size=44, color=C_GRAY,
                               font=F_ACCENT, align=PP_ALIGN.CENTER)
         # Legacy caption (bottom-center) only when no footnote
         if caption and not footnote:

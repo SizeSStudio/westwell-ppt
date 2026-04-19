@@ -76,6 +76,7 @@ Derived from studying actual Westwell solution decks (airport, factory, seaport)
 - Never exceed ~60 words of body text on a single slide
 - Never use a dense "colored header + 4 packed boxes" McKinsey layout — Westwell's aesthetic is airier
 - Never add decorative shapes or borders that aren't inherited from the template
+- **Never leave a dead band between the last content block and the template footer art at y≈5.933".** Content bottom should hug 5.85" (0.05–0.10" margin). A 0.3–0.5" empty strip below the callout/footnote reads as "this page isn't finished" even when `density='compact'`. If a column (e.g. `value_ladder` stage, `two_col` card) renders with obvious internal emptiness, prefer adding a short `body` line / extending the card over letting the space stay blank. See `design-system.md` → *Bottom-padding discipline* for the exact constants.
 
 **Balance with analytic layouts:** McKinsey analytic layouts (2×2 matrix, waterfall, timeline, etc. — see `layouts-analytic.md`) are welcome **as logic tools**, but no more than 2–3 per chapter. Use `statement` / chapter separator / KPI `stats` slides to breathe between them.
 
