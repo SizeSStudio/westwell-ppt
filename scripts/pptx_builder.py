@@ -899,27 +899,35 @@ class WestwellPPT:
         return slide
 
     def two_col(self, title: str,
-                left_head: str, left_body: str,
-                right_head: str, right_body: str,
+                left_head: str, left_body,
+                right_head: str, right_body,
                 dark: bool = False, density: str = 'compact',
                 eyebrow: str = '', subtitle: str = '',
                 footnote: str = '', bottom_callout: dict = None,
                 notes: str = '', contrast: bool = False,
-                emphasis: str = 'left'):
+                emphasis: str = 'left',
+                left_eyebrow: str = '', right_eyebrow: str = ''):
         """
         Two-column layout. Heading + body in each column.
 
+        **Column body can be a str or a list:**
+          • str  → renders as a rich paragraph (original behavior)
+          • list → renders as an editorial numbered list
+                   (01 / 02 / 03 teal mono + item text).
+                   The editorial list format matches control_matrix's MUST
+                   CONTROL panel — eyebrow + big head + teal rule + numbered
+                   items. Use for列举式对比 (3-5 items per column).
+
+        Per-column optional eyebrows (`left_eyebrow` / `right_eyebrow`) put
+        a small mono caps label above the column heading — e.g. 'MUST
+        CONTROL' / 'CAN PARTNER' / 'PATH A' / 'FROM · 过去'.
+
         Editorial framing kwargs:
           • eyebrow, subtitle, footnote, notes — see bullets().
-          • bottom_callout — dict {label, text, dark?} full-width strip
-            at y=4.60; suppresses footnote when present.
-          • contrast=True — **dramatic card style** (like control_matrix):
-            one column is deep navy + white text, the other is light-gray
-            + navy text. Use for正反对照 / PATH A vs B / 过去 vs 现在
-            where you want strong visual hierarchy.
-          • emphasis — 'left' (default) or 'right': which column is the
-            deep navy one when contrast=True. The emphasized column is
-            where you want the reader to land.
+          • bottom_callout — dict {label, text, dark?} full-width strip;
+            suppresses footnote when present.
+          • contrast=True + emphasis='left'|'right' — one column deep navy,
+            the other light gray (like control_matrix).
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
@@ -931,10 +939,10 @@ class WestwellPPT:
         col_w = (CW - 0.30) / 2   # gap between cols = 0.30"
         r_x   = CL + col_w + 0.30
 
-        cols = [(CL, left_head, left_body, 'left'),
-                (r_x, right_head, right_body, 'right')]
+        cols = [(CL, left_eyebrow, left_head, left_body, 'left'),
+                (r_x, right_eyebrow, right_head, right_body, 'right')]
 
-        for x, head, body, side in cols:
+        for x, col_eyebrow, head, body, side in cols:
             # Decide the card style for this column
             if contrast:
                 is_emphasized = (side == emphasis)
@@ -943,31 +951,70 @@ class WestwellPPT:
                     head_color = C_WHITE
                     body_color = C_LGRAY
                     accent_color = C_TEAL
+                    eyebrow_color = C_TEAL
+                    numeral_color = C_TEAL
                 else:
                     card_color = C_LGRAY
                     head_color = C_NAVY
                     body_color = C_BLACK
                     accent_color = C_TEAL
+                    eyebrow_color = C_TEAL
+                    numeral_color = C_TEAL
             else:
                 card_color = RGBColor(0x1A, 0x2E, 0x7A) if dark else C_LGRAY
                 head_color = C_WHITE if dark else C_NAVY
                 body_color = C_LGRAY if dark else C_BLACK
                 accent_color = C_TEAL
+                eyebrow_color = C_TEAL
+                numeral_color = C_TEAL
 
             self._rect(slide, x, ct, col_w, ch, fill=card_color, radius=0.10)
             # Top accent strip
             self._rect(slide, x, ct, col_w, 0.06, fill=accent_color)
-            # Column heading
-            self._textbox(slide, x + 0.28, ct + 0.22, col_w - 0.40, 0.55,
-                          head, size=19, bold=True, color=head_color,
+
+            # Optional eyebrow inside the card
+            head_y = ct + 0.22
+            if col_eyebrow:
+                self._textbox(slide, x + 0.32, ct + 0.22, col_w - 0.48, 0.28,
+                              col_eyebrow, size=11, bold=True,
+                              color=eyebrow_color, font=F_ACCENT,
+                              align=PP_ALIGN.LEFT)
+                head_y = ct + 0.52
+            # Column heading — bigger if eyebrow present (p14 style)
+            head_size = 22 if col_eyebrow else 19
+            self._textbox(slide, x + 0.32, head_y, col_w - 0.48, 0.60,
+                          head, size=head_size, bold=True, color=head_color,
                           font=F_BODY, align=PP_ALIGN.LEFT)
-            # Thin rule under heading (teal on both styles)
-            self._hline(slide, x + 0.28, ct + 0.82, col_w - 0.56,
+
+            # Thin teal rule
+            rule_y = head_y + 0.72
+            self._hline(slide, x + 0.32, rule_y, col_w - 0.64,
                         C_TEAL, 0.022)
-            # Column body — supports **bold** markers
-            self._rich_textbox(slide, x + 0.28, ct + 1.00, col_w - 0.40,
-                               ch - 1.15, body, size=17, color=body_color,
-                               font=F_BODY)
+
+            # Body — str: paragraph; list: editorial numbered list
+            body_top = rule_y + 0.18
+            body_h = ch - (body_top - ct) - 0.15
+            if isinstance(body, (list, tuple)):
+                n = len(body)
+                if n > 0:
+                    item_h = body_h / n
+                    for i, item in enumerate(body):
+                        iy = body_top + i * item_h
+                        # Numeral
+                        self._textbox(
+                            slide, x + 0.32, iy + 0.04, 0.55, 0.30,
+                            f'{i+1:02d}', size=13, bold=True,
+                            color=numeral_color, font=F_ACCENT,
+                            align=PP_ALIGN.LEFT, wrap=False)
+                        # Item body
+                        self._rich_textbox(
+                            slide, x + 0.95, iy, col_w - 1.10, item_h - 0.04,
+                            item, size=14, color=body_color, font=F_BODY)
+            else:
+                self._rich_textbox(
+                    slide, x + 0.32, body_top, col_w - 0.48, body_h,
+                    body or '', size=17, color=body_color, font=F_BODY)
+
         if bottom_callout:
             self._bottom_callout(slide, bottom_callout, dark)
         self._footnote_strip(slide, footnote if not bottom_callout else '', dark)
@@ -981,17 +1028,16 @@ class WestwellPPT:
                   notes: str = '', highlight_idx: int = -1):
         """
         Three-column insight card layout.
-        columns: list of 3 dicts {"head": str, "body": str}
-        Best for: executive summary pillars, phase overview, 3-way comparison.
-        Supports **bold** inline markers in body text.
+        columns: list of 3 dicts. Each dict supports:
+          • 'head'    — column heading (required)
+          • 'body'    — str paragraph OR list of items (numbered editorial style)
+          • 'eyebrow' — optional small mono caps label above head (e.g. "MUST CONTROL")
 
         Editorial framing kwargs:
           • eyebrow, subtitle, footnote, notes — see bullets().
           • bottom_callout — dict {label, text, dark?}; suppresses footnote.
           • highlight_idx — 0/1/2 to render that column as deep navy + white
             (the "emphasized" column); -1 means no highlight (all light).
-            Use when one of three items is the final takeaway or culminating
-            choice (like Ainery's "成为标准层一部分" column).
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
@@ -1018,16 +1064,48 @@ class WestwellPPT:
             self._rect(slide, x, ct, col_w, ch, fill=card_color, radius=0.10)
             # Teal top accent strip
             self._rect(slide, x, ct, col_w, 0.06, fill=C_TEAL)
-            # Column heading
-            self._textbox(slide, x + 0.24, ct + 0.22, col_w - 0.36, 0.55,
-                          col.get('head', ''), size=18, bold=True,
+
+            col_eyebrow = col.get('eyebrow', '')
+            head = col.get('head', '')
+            body = col.get('body', '')
+
+            head_y = ct + 0.22
+            if col_eyebrow:
+                self._textbox(slide, x + 0.28, ct + 0.22, col_w - 0.40, 0.28,
+                              col_eyebrow, size=11, bold=True,
+                              color=C_TEAL, font=F_ACCENT,
+                              align=PP_ALIGN.LEFT)
+                head_y = ct + 0.52
+
+            head_size = 20 if col_eyebrow else 18
+            self._textbox(slide, x + 0.28, head_y, col_w - 0.40, 0.60,
+                          head, size=head_size, bold=True,
                           color=head_color, font=F_BODY, align=PP_ALIGN.LEFT)
-            # Rule under heading
-            self._hline(slide, x + 0.24, ct + 0.82, col_w - 0.48, C_TEAL, 0.022)
-            # Body text — supports **bold** markers
-            self._rich_textbox(slide, x + 0.24, ct + 1.00, col_w - 0.36,
-                               ch - 1.15, col.get('body', ''),
-                               size=16, color=body_color, font=F_BODY)
+
+            rule_y = head_y + 0.72
+            self._hline(slide, x + 0.28, rule_y, col_w - 0.56, C_TEAL, 0.022)
+
+            # Body — str or list
+            body_top = rule_y + 0.18
+            body_h = ch - (body_top - ct) - 0.15
+            if isinstance(body, (list, tuple)):
+                n = len(body)
+                if n > 0:
+                    item_h = body_h / n
+                    for j, item in enumerate(body):
+                        iy = body_top + j * item_h
+                        self._textbox(
+                            slide, x + 0.28, iy + 0.04, 0.50, 0.30,
+                            f'{j+1:02d}', size=12, bold=True,
+                            color=C_TEAL, font=F_ACCENT,
+                            align=PP_ALIGN.LEFT, wrap=False)
+                        self._rich_textbox(
+                            slide, x + 0.82, iy, col_w - 0.95, item_h - 0.04,
+                            item, size=13, color=body_color, font=F_BODY)
+            else:
+                self._rich_textbox(
+                    slide, x + 0.28, body_top, col_w - 0.40, body_h,
+                    body or '', size=15, color=body_color, font=F_BODY)
         if bottom_callout:
             self._bottom_callout(slide, bottom_callout, dark)
         self._footnote_strip(slide, footnote if not bottom_callout else '', dark)

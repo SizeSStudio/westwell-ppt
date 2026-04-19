@@ -58,6 +58,61 @@ bottom_callout = {
 
 ---
 
+## Editorial card body — 编号列表 vs 段落(两种内部布局)
+
+每个 two_col / three_col 的 column body 可以是 **str 或 list**:
+
+- **str** → 渲染为段落(适合叙述性说明)
+- **list** → 渲染为**编号列表**(01/02/03 青色 mono + 每项一行)
+
+列表风格搭配 `left_eyebrow` / `right_eyebrow`(two_col)或 column dict
+里的 `eyebrow` 字段(three_col)使用,效果就是 `control_matrix` 左侧
+MUST CONTROL 栏那种 editorial 卡片结构:
+
+```
+┌──────────────────────────────────┐
+│ MUST CONTROL                     │  ← 小眉标(mono caps, teal)
+│ 必须自控的能力                    │  ← 大标题(22pt bold)
+│ ──────                           │  ← 青色 teal 短线
+│ 01  场景运营与调度智能            │
+│ 02  对客户场景的语义理解          │  ← 编号列表
+│ 03  物理执行闭环                  │
+│ 04  能源协同与补能组织            │
+│ 05  关键执行层适配                │
+└──────────────────────────────────┘
+```
+
+**使用方式**:
+
+```python
+ppt.two_col(
+    ...,
+    left_eyebrow='MUST ALIGN',        # 小眉标
+    left_head='统一的三件事',         # 大标题
+    left_body=[                        # list → 编号列表
+        '**主线上移** — 不是卖更多车',
+        '**ReeWell 平台化** — 按标准化组织',
+        '**复制逻辑** — 先站住标准',
+    ],
+    right_eyebrow='DO NOT MISJUDGE',
+    right_head='不要误判的三件事',
+    right_body=[
+        '咨询 ≠ 成熟打法',
+        'AI Operator ≠ 近两年主战略',
+        '探索 ≠ 主航道',
+    ],
+    contrast=True, emphasis='left',   # 左栏深蓝强调
+)
+```
+
+**何时用 editorial list vs 长段落**:
+- list → 多条并列的短论点、原则、建议、clauses(3–5 条)
+- str  → 单一连贯的叙述、解释段落、因果论证
+
+这是咨询备忘录的**签名卡片样式** — 比"长段落"清爽,读者扫一眼就能数清"有几件事"。
+
+---
+
 ## 卡片对比度(`contrast` / `highlight_idx`)— 让某一栏突出
 
 默认卡片是"全浅灰+teal 顶条"的均匀样式 — 适合平行并列。但当一栏承载整页
