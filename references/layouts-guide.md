@@ -10,6 +10,9 @@ When to use each slide type in `pptx_builder.py`, with content guidelines.
 Is this the first slide?
   → cover()
 
+Is this a visual grammar preview, chapter thesis, or executive anchor?
+  → hero()
+
 Is this a section divider between chapters?
   → chapter()
 
@@ -20,12 +23,23 @@ Is this a table of contents?
   → agenda()
 
 Does the slide feature a prominent number/metric/KPI?
-  → stats()
+  + classic Westwell KPI cards → stats()
+  + data-editorial / benchmark proof → big_numbers()
+
+Does this slide need an executive quote or bottom-line pause?
+  → quote_editorial()
 
 Does the slide have an image as the main content?
-  + with a text explanation beside it → image_left()
+  + with a text explanation beside it → lead_image() or text_image()
   + with a text explanation above it  → image_below()
   + image fills the whole content area → image()
+  + multiple real assets / screenshots → image_grid()
+
+Does this slide show a process or implementation sequence?
+  → pipeline()
+
+Does this slide list principles, protocols, or findings in rows?
+  → rowlines()
 
 Does the slide have two parallel topics to compare?
   → two_col()
@@ -42,6 +56,71 @@ Does the slide have a data table?
 Does the slide have flowing prose or a single insight?
   → text()
 ```
+
+---
+
+## Visual Grammar Layouts
+
+These layouts absorb Guizang/Huashu editorial discipline while staying
+Westwell-branded and PPTX-native. They are preferred during the 2-slide
+visual grammar pass.
+
+## `hero(title, kicker='', lead='', dark=True, variant='chapter', meta_left='', meta_right='', foot_left='', foot_right='')`
+
+**When:** Visual grammar preview, chapter thesis, executive anchor, or a major
+strategic pivot.
+
+**Use:** 1 strong title, optional short kicker, optional lead. Keep body text
+off the slide unless it is a one-line thesis.
+
+## `big_numbers(title, metrics, kicker='', lead='', dark=False)`
+
+**When:** Benchmark, KPI, market proof, adoption results.
+
+**Input:** `metrics=[(value, label, note), ...]`, 2-4 items.
+
+**Rules:** Values must be short and memorable. Notes should be evidence lines,
+not explanations. Use `stats()` when you want classic Westwell KPI cards;
+use `big_numbers()` when the number itself is the visual anchor.
+
+## `pipeline(title, steps, kicker='', lead='', dark=False)`
+
+**When:** Rollout path, product workflow, platform logic, capability maturity.
+
+**Input:** `steps=[{'title': '...', 'body': '...'}, ...]`, 3-6 steps.
+
+**Rules:** Each step title is a noun phrase or short verb phrase. Body stays
+under 25 Chinese characters where possible.
+
+## `rowlines(title, rows, kicker='', lead='', dark=False)`
+
+**When:** Asset protocol, design principles, key findings, risks, decisions.
+
+**Input:** `rows=[(key, value, meta), ...]` or dicts with `key/value/meta`.
+
+**Rules:** Use rows when card grids feel too generic or too decorative.
+
+## `quote_editorial(text, attribution='', title='', kicker='', dark=True)`
+
+**When:** Executive pause, quote, bottom-line, "so what" moment.
+
+**Rules:** The quote should fit in 1-3 lines. Use it to create rhythm, not as
+filler.
+
+## `lead_image(title, lead, img_path=None, kicker='', caption='', dark=False)`
+
+**When:** A single photo, UI screenshot, product image, or diagram is the proof.
+
+**Rules:** Missing image shows an explicit placeholder. Real images should
+preserve top-critical information.
+
+## `image_grid(title, images, kicker='', lead='', dark=False)`
+
+**When:** Multiple assets prove the point: site photos, UI states, product
+details, before/after screenshots.
+
+**Input:** `images=[{'path': '/abs/file.png', 'label': 'Dispatch UI'}, ...]`.
+2×2 is best; 3×2 is the maximum.
 
 ---
 

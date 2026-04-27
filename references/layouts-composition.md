@@ -158,6 +158,13 @@ ppt.three_col(
 | `layouts-guide.md`      | 基础叙事版式 — 封面、章节、目录、bullets、stats、text_image、two_col、three_col、table、image、end | 产品方案、项目汇报、市场分析 |
 | `layouts-analytic.md`   | 分析型版式 — 单图表、2×2 矩阵、瀑布图、时间轴等(多数需 PNG 预生成) | 数据论证、逻辑推理、趋势展示 |
 | **`layouts-composition.md`** (本文) | 战略叙事组合版式 — 金字塔、价值链、控制矩阵、反向清单、Before/After、价值阶梯、Big Number、Quote、Number List | 战略备忘录、董事会材料、IPO 内部讨论、高阶提报 |
+| `visual-grammar.md`     | 2页样张机制、节奏表、Westwell-compatible style directions | 5页以上 deck 开始批量生成前 |
+
+`layouts-guide.md` now also includes visual grammar layouts:
+`hero`, `big_numbers`, `image_grid`, `pipeline`, `rowlines`,
+`lead_image`, and `quote_editorial`. Use these when the deck needs stronger
+rhythm or a Guizang/Huashu-inspired editorial feel, then return to the
+composition layouts here for strategy-specific argument structures.
 
 ---
 

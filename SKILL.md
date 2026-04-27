@@ -42,6 +42,9 @@ Keep this SKILL.md the only thing loaded by default. Pull in a reference **the f
 | File | When to load |
 |------|-------------|
 | `references/design-system.md` | Anytime you need colors, fonts, geometry |
+| `references/visual-grammar.md` | Step 3 — 2-slide showcase, rhythm rules, Westwell-compatible style directions |
+| `references/asset-protocol.md` | Step 3/5 — required logo/product/UI/site-photo asset protocol for concrete brands, customers, and products |
+| `references/checklist.md` | Step 6 — final QA checklist + 5-dimension design review |
 | `references/layouts-guide.md` | Step 3 (Dummy design) — narrative layouts (cover, chapter, bullets, stats, text_image, two_col, three_col, table, image, text, end) |
 | `references/layouts-analytic.md` | Step 3 — analytic layouts (single chart, 2×2 matrix, waterfall, timeline, insight summary) for logic flow and data reasoning |
 | `references/layouts-composition.md` | Step 3 — **composition layouts + editorial framing** (eyebrow/subtitle/footnote/bottom_callout/notes kwargs) (pyramid, value_chain, control_matrix, not_list, before_after, value_ladder, big_number, quote, number_list, step_grid) |
@@ -79,6 +82,28 @@ Derived from studying actual Westwell solution decks (airport, factory, seaport)
 - **Never leave a dead band between the last content block and the template footer art at y≈5.933".** Content bottom should hug 5.85" (0.05–0.10" margin). A 0.3–0.5" empty strip below the callout/footnote reads as "this page isn't finished" even when `density='compact'`. If a column (e.g. `value_ladder` stage, `two_col` card) renders with obvious internal emptiness, prefer adding a short `body` line / extending the card over letting the space stay blank. See `design-system.md` → *Bottom-padding discipline* for the exact constants.
 
 **Balance with analytic layouts:** McKinsey analytic layouts (2×2 matrix, waterfall, timeline, etc. — see `layouts-analytic.md`) are welcome **as logic tools**, but no more than 2–3 per chapter. Use `statement` / chapter separator / KPI `stats` slides to breathe between them.
+
+**⑧ Visual Grammar Pass for 5+ page decks.** Before batch generation, create
+two representative preview slides: one anchor slide (`cover` / `hero` /
+chapter / statement) and one evidence slide (`big_numbers` / `lead_image` /
+`pipeline` / `image_grid` / dense analytic). Render them, confirm the
+grammar, then scale to the full deck. This avoids 12-slide rewrites caused by
+wrong visual direction.
+
+**⑨ Real assets beat generic decoration.** When a slide is about a concrete
+customer, product, UI, vehicle, port, airport, or factory, collect or request
+the actual logo / product image / UI screenshot / site photo. If the asset is
+missing, use a clear placeholder and list it in data needs; never fill the
+slot with unrelated stock or decorative AI imagery.
+
+**Three Westwell-compatible style directions (layout only, not palette):**
+- **Pentagram / Data Editorial** — data proof, benchmarks, market analysis;
+  use strong grids, large numbers, `big_numbers()`, `rowlines()`, chart images.
+- **Build / Executive Minimal** — board, strategy, and conclusion pages; use
+  extreme restraint, `hero()`, `quote_editorial()`, sparse `text()`.
+- **Takram / Soft Systems** — platform architecture, ecosystem, energy
+  coordination; use calm systems diagrams, `pipeline()`, `lead_image()`,
+  `image_grid()`.
 
 ---
 
@@ -124,17 +149,20 @@ Phase 1 · Problem Solving  (Full mode only — skip if user gave structured inp
 
 Phase 2 · Design
   Step 3   Dummy Pages with page dependencies            → load dummy-pages-spec.md
+                                                          + visual-grammar.md
+                                                          + asset-protocol.md
                                                           + layouts-guide.md
                                                           + layouts-analytic.md
                                                           + layouts-composition.md  (strategy-memo composites)
                                                           + exemplar-strategy-memo.md  (ONLY if user asked for 战略/董事会/IPO 内部讨论)
             Output: <project>_DummyPages_<YYYYMMDD>.md
-  Step 4   User confirms Dummy; choose generation mode A / B
+  Step 4   For 5+ page decks: generate 2-slide visual grammar preview;
+           user confirms Dummy + visual grammar; choose generation mode A / B
 
 Phase 3 · Generate & Deliver
   Step 5   Per-page loop (dep check → data → chart → slide → preview → pause)
                                                           → load data-collection.md
-  Step 6   Deliver final .pptx + preview
+  Step 6   Deliver final .pptx + preview                  → load checklist.md
   Step 7   Iterate                                        → load troubleshooting.md (on demand)
 ```
 
@@ -208,6 +236,8 @@ The Hypothesis Tree becomes the raw input for Phase 2's slide structure. Save a 
 
 ```python
 Read("~/.claude/skills/westwell-ppt/references/dummy-pages-spec.md")
+Read("~/.claude/skills/westwell-ppt/references/visual-grammar.md")
+Read("~/.claude/skills/westwell-ppt/references/asset-protocol.md")
 Read("~/.claude/skills/westwell-ppt/references/layouts-guide.md")
 Read("~/.claude/skills/westwell-ppt/references/layouts-analytic.md")
 Read("~/.claude/skills/westwell-ppt/references/layouts-composition.md")
@@ -220,8 +250,15 @@ Then produce `<project>_DummyPages_<YYYYMMDD>.md` with:
 1. **Project info** — title, date, total pages, audience, narrative mode (SCQA/BCG/Bain), core conclusion
 2. **Page dependency overview** — explicit batches (第一轮 independent → 第二轮 forward-dependent → 第三轮 backward-dependent / last)
 3. **Cross-session resumption note** — how to pick up where we left off
-4. **Every page** with: dependency label, slide type (mapped to builder method), content points, data needs, information sources
-5. **For non-independent pages**, also: 前置条件, 依赖页面, 缺失时对策
+4. **Visual grammar table** — page rhythm, style direction, dark/light cadence,
+   and which two pages will be generated as the preview showcase when total
+   page count is 5+
+5. **Every page** with: dependency label, slide type (mapped to builder method), content points, data needs, information sources
+6. **Every page's four visual questions**: narrative role, audience distance,
+   visual temperature, capacity estimate
+7. **Asset needs** for concrete customers/products/scenes: logo, product/site
+   photos, UI screenshots, diagrams, charts, and fallback if missing
+8. **For non-independent pages**, also: 前置条件, 依赖页面, 缺失时对策
 
 Use the 5 dependency labels from `dummy-pages-spec.md`:
 ```
@@ -232,12 +269,20 @@ Pick slide types from **three** reference files:
 - Narrative layouts → `layouts-guide.md` (cover, chapter, bullets, stats, text_image, etc.)
 - Analytic layouts → `layouts-analytic.md` (single chart, 2×2 matrix, waterfall, timeline, insight summary)
 - Composition layouts → `layouts-composition.md` (pyramid, value_chain, control_matrix, not_list, before_after, value_ladder, big_number, quote, number_list) — strategy-memo patterns, use for 战略 / 董事会 / IPO 内部讨论 type decks
+- Visual grammar layouts → `layouts-guide.md` / `visual-grammar.md`
+  (`hero`, `big_numbers`, `image_grid`, `pipeline`, `rowlines`,
+  `lead_image`, `quote_editorial`) — use these to bring in
+  Guizang/Huashu-style rhythm while staying PPTX-native and Westwell-branded
 
 For a **strategy memo** specifically (战略思考 / 内部咨询版 / 董事会材料 / IPO 讨论稿), also load `exemplar-strategy-memo.md` — it gives you a battle-tested 18-page storyline (SCQA × 三层战略) you can adapt rather than designing from scratch.
 
 Remember:
 - **Slide titles must be论点, not topic labels** (see the Universal Rules table above)
 - **Analytic layouts requiring charts need PNG pre-generation** — prefer the `diagram` skill for waterfalls / 2×2 / timelines; fall back to matplotlib with Westwell colors only if diagram doesn't cover the need. Charts go to `/tmp/westwell_charts/slide_XX.png`, then insert via `image()` or `text_image()`.
+- **For 5+ page decks, do not batch-generate all slides before the 2-slide
+  visual grammar preview is rendered and accepted.**
+- **Missing assets must stay explicit** (`[ CUSTOMER LOGO ]`,
+  `[ SITE PHOTO ]`, `[ UI SCREENSHOT ]`) until real assets are supplied.
 - **Every slide type named in the Dummy must map to a real builder method**. If unsure, re-read `layouts-guide.md` or check `scripts/pptx_builder.py` directly.
 
 Output the full Dummy as a file (not just inline), then release the reference files.

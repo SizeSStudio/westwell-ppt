@@ -71,8 +71,17 @@ ppt.save()
 | `table()` | Data table with navy header row |
 | `text()` | Flowing prose |
 | `end()` | Closing slide with brand art |
+| `hero()` | Visual grammar / chapter thesis slide |
+| `big_numbers()` | Data-editorial KPI or benchmark page |
+| `pipeline()` | 3-6 step rollout, workflow, or platform logic |
+| `rowlines()` | Editorial list of principles, findings, assets, or decisions |
+| `quote_editorial()` | Executive quote / bottom-line pause |
+| `lead_image()` | Left thesis + right image proof |
+| `image_grid()` | 2×2 or 3×2 real asset / screenshot grid |
 
 Every content method supports `dark=True` for dark-background variant and `density='compact'` (default) or `density='standard'` for different bottom decoration weights.
+Most visual layouts also accept quiet editorial chrome: `kicker`, `lead`,
+`meta_left`, `meta_right`, `foot_left`, `foot_right`, and `variant`.
 
 ## Design system
 
@@ -117,6 +126,9 @@ westwell-ppt/
 │   └── pptx_builder.py         <- WestwellPPT builder class (~960 lines)
 └── references/
     ├── design-system.md        <- Colors, fonts, geometry
+    ├── visual-grammar.md       <- 2-slide visual grammar pass + rhythm rules
+    ├── asset-protocol.md       <- Logo/product/UI/site-photo asset protocol
+    ├── checklist.md            <- Final QA + 5-dimension design review
     ├── layouts-guide.md        <- Narrative slide types
     ├── layouts-analytic.md     <- McKinsey-style analytic layouts
     ├── methodology.md          <- Problem Solving (Issue Tree, Hypotheses)

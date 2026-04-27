@@ -505,6 +505,109 @@ class WestwellPPT:
         except Exception:
             pass
 
+    def _meta_footer(self, slide, meta_left='', meta_right='',
+                     foot_left='', foot_right='', dark=False):
+        """Small magazine-style chrome for visual-grammar layouts.
+
+        These labels are intentionally quiet. The Westwell master already
+        owns the brand zone; this helper only adds optional context when a
+        deck wants Huashu/Guizang-style editorial navigation.
+        """
+        meta_color = C_LGRAY if dark else C_GRAY
+        foot_color = C_LGRAY if dark else C_GRAY
+        if meta_left:
+            self._textbox(slide, CL, 0.14, 5.2, 0.22,
+                          meta_left.upper(), size=8, bold=True,
+                          color=meta_color, font=F_ACCENT,
+                          align=PP_ALIGN.LEFT, wrap=False)
+        if meta_right:
+            self._textbox(slide, 9.40, 0.14, 2.9, 0.22,
+                          meta_right.upper(), size=8, bold=True,
+                          color=meta_color, font=F_ACCENT,
+                          align=PP_ALIGN.RIGHT, wrap=False)
+        if foot_left:
+            self._textbox(slide, CL, 6.88, 5.6, 0.25,
+                          foot_left, size=8, color=foot_color,
+                          font=F_ACCENT, align=PP_ALIGN.LEFT,
+                          wrap=False)
+        if foot_right:
+            self._textbox(slide, 7.0, 6.88, 5.3, 0.25,
+                          foot_right, size=8, color=foot_color,
+                          font=F_ACCENT, align=PP_ALIGN.RIGHT,
+                          wrap=False)
+
+    def _placeholder_frame(self, slide, l, t, w, h,
+                           label='IMAGE', dark=False):
+        """Clear asset placeholder. Prefer this over generic decoration."""
+        fill = RGBColor(0x1A, 0x2E, 0x7A) if dark else C_LGRAY
+        text_color = C_LGRAY if dark else C_GRAY
+        self._rect(slide, l, t, w, h, fill=fill, radius=0.08)
+        self._rect(slide, l, t, w, 0.045, fill=C_TEAL)
+        self._textbox(slide, l + 0.18, t + h / 2 - 0.12, w - 0.36, 0.30,
+                      f'[ {label} ]', size=10, bold=True,
+                      color=text_color, font=F_ACCENT,
+                      align=PP_ALIGN.CENTER, wrap=False)
+
+    def _add_fit_picture(self, slide, img_path, l, t, w, h,
+                         fit='contain', valign='top'):
+        """Add image with a stable crop/fit policy.
+
+        fit='contain' preserves the whole image.
+        fit='cover' fills the frame and crops from the bottom/right first,
+        keeping the top-left/top-center information visible for screenshots.
+        """
+        if not img_path or not os.path.exists(img_path):
+            return False
+        if fit == 'cover':
+            # python-pptx crop uses fractions of intrinsic image dimensions.
+            import struct
+            iw = ih = None
+            try:
+                ext = os.path.splitext(img_path)[1].lower()
+                if ext == '.png':
+                    with open(img_path, 'rb') as f:
+                        header = f.read(24)
+                    if header[:8] == b'\x89PNG\r\n\x1a\n':
+                        iw = struct.unpack('>I', header[16:20])[0]
+                        ih = struct.unpack('>I', header[20:24])[0]
+                elif ext in ('.jpg', '.jpeg'):
+                    with open(img_path, 'rb') as f:
+                        data = f.read(65536)
+                    pos = 2
+                    while pos < len(data) - 8:
+                        marker = data[pos:pos+2]
+                        if marker[0] != 0xFF:
+                            break
+                        length = struct.unpack('>H', data[pos+2:pos+4])[0]
+                        if marker[1] in (0xC0, 0xC1, 0xC2):
+                            ih = struct.unpack('>H', data[pos+5:pos+7])[0]
+                            iw = struct.unpack('>H', data[pos+7:pos+9])[0]
+                            break
+                        pos += 2 + length
+            except Exception:
+                iw = ih = None
+            if iw and ih:
+                frame_ratio = w / h
+                img_ratio = iw / ih
+                pic = slide.shapes.add_picture(img_path, I(l), I(t), I(w), I(h))
+                if img_ratio > frame_ratio:
+                    crop = 1 - frame_ratio / img_ratio
+                    pic.crop_left = crop / 2
+                    pic.crop_right = crop / 2
+                elif img_ratio < frame_ratio:
+                    crop = 1 - img_ratio / frame_ratio
+                    if valign == 'center':
+                        pic.crop_top = crop / 2
+                        pic.crop_bottom = crop / 2
+                    else:
+                        pic.crop_bottom = crop
+                return True
+        img_w, img_h = self._img_size(img_path, w, h)
+        x = l + (w - img_w) / 2
+        y = t if valign == 'top' else t + (h - img_h) / 2
+        slide.shapes.add_picture(img_path, I(x), I(y), I(img_w), I(img_h))
+        return True
+
     def _new_slide(self, layout_name: str, dark=False,
                    density: str = 'compact') -> object:
         """Add slide, suppress all placeholders.
@@ -669,7 +772,10 @@ class WestwellPPT:
     def statement(self, text: str, label: str = '', dark: bool = True,
                   density: str = 'compact',
                   eyebrow: str = '', subtitle: str = '',
-                  footnote: str = '', notes: str = ''):
+                  footnote: str = '', notes: str = '',
+                  kicker: str = '', lead: str = '',
+                  meta_left: str = '', meta_right: str = '',
+                  foot_left: str = '', foot_right: str = ''):
         """
         Full-slide statement. A single bold claim, centered.
         Use for pivotal moments: the core thesis, a key data insight,
@@ -681,6 +787,10 @@ class WestwellPPT:
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
+        eyebrow = eyebrow or kicker
+        subtitle = subtitle or lead
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
         if eyebrow:
             # Eyebrow at top-left on a statement slide too
             self._textbox(slide, TL, EYEBROW_Y, TITLE_SAFE_W, EYEBROW_H,
@@ -716,7 +826,10 @@ class WestwellPPT:
                 dark: bool = False, body_size: int = 19,
                 density: str = 'compact',
                 eyebrow: str = '', subtitle: str = '',
-                footnote: str = '', notes: str = ''):
+                footnote: str = '', notes: str = '',
+                kicker: str = '', lead: str = '',
+                meta_left: str = '', meta_right: str = '',
+                foot_left: str = '', foot_right: str = ''):
         """
         Bulleted list slide.
         points: list of strings. Each is one bullet.
@@ -732,8 +845,12 @@ class WestwellPPT:
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
+        eyebrow = eyebrow or kicker
+        subtitle = subtitle or lead
         self._title(slide, title, dark=dark, eyebrow=eyebrow)
         self._subtitle_block(slide, subtitle, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
 
         ct, _, ch = self._content_bounds(subtitle, footnote, None)
 
@@ -761,7 +878,10 @@ class WestwellPPT:
                    dark: bool = False, body_size: int = 16,
                    density: str = 'compact',
                    eyebrow: str = '', subtitle: str = '',
-                   footnote: str = '', notes: str = ''):
+                   footnote: str = '', notes: str = '',
+                   kicker: str = '', lead: str = '',
+                   meta_left: str = '', meta_right: str = '',
+                   foot_left: str = '', foot_right: str = ''):
         """
         Left text (32%) + right image (64%), side by side.
 
@@ -781,8 +901,12 @@ class WestwellPPT:
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
+        eyebrow = eyebrow or kicker
+        subtitle = subtitle or lead
         self._title(slide, title, dark=dark, eyebrow=eyebrow)
         self._subtitle_block(slide, subtitle, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
 
         body_color = C_WHITE if dark else C_BLACK
 
@@ -832,7 +956,10 @@ class WestwellPPT:
     def stats(self, title: str, stats: list, dark: bool = False,
               density: str = 'compact',
               eyebrow: str = '', subtitle: str = '',
-              footnote: str = '', notes: str = ''):
+              footnote: str = '', notes: str = '',
+              kicker: str = '', lead: str = '',
+              meta_left: str = '', meta_right: str = '',
+              foot_left: str = '', foot_right: str = ''):
         """
         KPI / metric slide.
         stats: list of (value, label, description) tuples. 2–4 items.
@@ -851,8 +978,12 @@ class WestwellPPT:
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
+        eyebrow = eyebrow or kicker
+        subtitle = subtitle or lead
         self._title(slide, title, dark=dark, eyebrow=eyebrow)
         self._subtitle_block(slide, subtitle, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
 
         # Auto-shrink value font size so all values render at the same
         # scale (longest one dictates). Chinese and ASCII mixed values are
@@ -910,7 +1041,10 @@ class WestwellPPT:
                 footnote: str = '', bottom_callout: dict = None,
                 notes: str = '', contrast: bool = False,
                 emphasis: str = 'left',
-                left_eyebrow: str = '', right_eyebrow: str = ''):
+                left_eyebrow: str = '', right_eyebrow: str = '',
+                kicker: str = '', lead: str = '',
+                meta_left: str = '', meta_right: str = '',
+                foot_left: str = '', foot_right: str = ''):
         """
         Two-column layout. Heading + body in each column.
 
@@ -935,8 +1069,12 @@ class WestwellPPT:
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
+        eyebrow = eyebrow or kicker
+        subtitle = subtitle or lead
         self._title(slide, title, dark=dark, eyebrow=eyebrow)
         self._subtitle_block(slide, subtitle, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
 
         ct, _, ch = self._content_bounds(subtitle, footnote, bottom_callout)
 
@@ -1030,7 +1168,10 @@ class WestwellPPT:
                   density: str = 'compact',
                   eyebrow: str = '', subtitle: str = '',
                   footnote: str = '', bottom_callout: dict = None,
-                  notes: str = '', highlight_idx: int = -1):
+                  notes: str = '', highlight_idx: int = -1,
+                  kicker: str = '', lead: str = '',
+                  meta_left: str = '', meta_right: str = '',
+                  foot_left: str = '', foot_right: str = ''):
         """
         Three-column insight card layout.
         columns: list of 3 dicts. Each dict supports:
@@ -1046,8 +1187,12 @@ class WestwellPPT:
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
+        eyebrow = eyebrow or kicker
+        subtitle = subtitle or lead
         self._title(slide, title, dark=dark, eyebrow=eyebrow)
         self._subtitle_block(slide, subtitle, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
 
         ct, _, ch = self._content_bounds(subtitle, footnote, bottom_callout)
 
@@ -1119,7 +1264,10 @@ class WestwellPPT:
               dark: bool = False, bold_col: int = None,
               density: str = 'compact', body_size: int = 11,
               eyebrow: str = '', subtitle: str = '',
-              footnote: str = '', notes: str = ''):
+              footnote: str = '', notes: str = '',
+              kicker: str = '', lead: str = '',
+              meta_left: str = '', meta_right: str = '',
+              foot_left: str = '', foot_right: str = ''):
         """
         Data table. Navy header row, alternating body rows.
 
@@ -1137,8 +1285,12 @@ class WestwellPPT:
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
+        eyebrow = eyebrow or kicker
+        subtitle = subtitle or lead
         self._title(slide, title, dark=dark, eyebrow=eyebrow)
         self._subtitle_block(slide, subtitle, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
 
         n_rows = 1 + len(rows)
         n_cols = len(headers)
@@ -1191,7 +1343,10 @@ class WestwellPPT:
               caption: str = '', body: str = '',
               dark: bool = False, density: str = 'compact',
               eyebrow: str = '', subtitle: str = '',
-              footnote: str = '', notes: str = ''):
+              footnote: str = '', notes: str = '',
+              kicker: str = '', lead: str = '',
+              meta_left: str = '', meta_right: str = '',
+              foot_left: str = '', foot_right: str = ''):
         """
         Image slide with optional narrative body below.
 
@@ -1215,8 +1370,12 @@ class WestwellPPT:
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
+        eyebrow = eyebrow or kicker
+        subtitle = subtitle or lead
         self._title(slide, title, dark=dark, eyebrow=eyebrow)
         self._subtitle_block(slide, subtitle, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
 
         CB_IMG = 6.60             # extended bottom for image slides
         content_h = CB_IMG - CT   # 4.80" vs standard 3.90"
@@ -1255,7 +1414,10 @@ class WestwellPPT:
     def text(self, title: str, body: str, dark: bool = False,
              body_size: int = 20, density: str = 'compact',
              eyebrow: str = '', subtitle: str = '',
-             footnote: str = '', notes: str = ''):
+             footnote: str = '', notes: str = '',
+             kicker: str = '', lead: str = '',
+             meta_left: str = '', meta_right: str = '',
+             foot_left: str = '', foot_right: str = ''):
         """
         Simple text slide. Title + rule + flowing body text.
         Use for a single statement backed by a prose explanation.
@@ -1266,8 +1428,12 @@ class WestwellPPT:
         """
         slide = self._new_slide(
             'custom slide1-light', dark=dark, density=density)
+        eyebrow = eyebrow or kicker
+        subtitle = subtitle or lead
         self._title(slide, title, dark=dark, eyebrow=eyebrow)
         self._subtitle_block(slide, subtitle, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
 
         body_color = C_WHITE if dark else C_BLACK
         self._textbox(slide, CL, CT, CW, CH,
@@ -1298,6 +1464,321 @@ class WestwellPPT:
             self._textbox(slide, cx - 3.5, 4.55, 7.0, 0.60,
                           subtitle, size=16, color=C_LGRAY,
                           font=F_BODY, align=PP_ALIGN.CENTER)
+        return slide
+
+    # ── Visual grammar layouts (Guizang × Huashu inspired, PPTX-native) ───────
+
+    def hero(self, title: str, kicker: str = '', lead: str = '',
+             dark: bool = True, variant: str = 'chapter',
+             meta_left: str = '', meta_right: str = '',
+             foot_left: str = '', foot_right: str = '',
+             notes: str = ''):
+        """Magazine-style hero / chapter slide.
+
+        This is PPTX-native and keeps Westwell's blue/teal system. Use it
+        for the 2-page visual grammar pass, chapter pivots, and executive
+        thesis moments.
+        """
+        slide = self._new_slide('custom slide1-light', dark=dark,
+                                density='compact')
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
+
+        color = C_WHITE if dark else C_NAVY
+        lead_color = C_LGRAY if dark else C_GRAY
+        if kicker:
+            self._textbox(slide, CL, 1.08, 8.0, 0.30,
+                          kicker.upper(), size=11, bold=True,
+                          color=C_TEAL, font=F_ACCENT,
+                          align=PP_ALIGN.LEFT, wrap=False)
+        lines = [l for l in title.split('\n') if l.strip()]
+        title_y = 1.52 if kicker else 1.28
+        title_size = 42 if len(''.join(lines)) <= 18 else 34
+        self._para_textbox(
+            slide, CL, title_y, 8.6, 2.25,
+            [{'text': ln, 'size': title_size, 'bold': True,
+              'color': color, 'font': F_TITLE,
+              'align': PP_ALIGN.LEFT, 'space_after': 6}
+             for ln in lines]
+        )
+        self._rect(slide, CL, title_y + min(len(lines), 2) * 0.62 + 0.22,
+                   1.6, 0.055, fill=C_TEAL)
+        if lead:
+            self._rich_textbox(slide, CL, 4.55, 6.7, 0.82,
+                               lead, size=17, color=lead_color,
+                               font=F_BODY)
+        # Editorial side rail: gives visual weight without adding new colors.
+        rail_x = 9.25
+        self._rect(slide, rail_x, 1.05, 0.035, 4.80, fill=C_TEAL)
+        ghost = 'WELL' if variant != 'data' else 'DATA'
+        self._textbox(slide, rail_x + 0.25, 1.22, 3.0, 0.80,
+                      ghost, size=34, bold=True,
+                      color=C_LGRAY if dark else C_MGRAY,
+                      font=F_ACCENT, align=PP_ALIGN.LEFT,
+                      wrap=False)
+        self._textbox(slide, rail_x + 0.27, 2.05, 2.6, 1.2,
+                      'Make a WELL Change', size=12,
+                      color=C_LGRAY if dark else C_GRAY,
+                      font=F_ACCENT, align=PP_ALIGN.LEFT)
+        self._attach_notes(slide, notes)
+        return slide
+
+    def big_numbers(self, title: str, metrics: list,
+                    dark: bool = False, variant: str = 'data',
+                    kicker: str = '', lead: str = '',
+                    meta_left: str = '', meta_right: str = '',
+                    foot_left: str = '', foot_right: str = '',
+                    notes: str = ''):
+        """Data-editorial KPI page with very large numeric anchors.
+
+        metrics: list of tuples (value, label, note) or dicts with value,
+        label, note. 3 metrics is ideal; 2-4 are supported.
+        """
+        slide = self._new_slide('custom slide1-light', dark=dark,
+                                density='compact')
+        self._title(slide, title, dark=dark, eyebrow=kicker)
+        self._subtitle_block(slide, lead, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
+        ct, _, ch = self._content_bounds(lead, '', None)
+        n = max(1, min(4, len(metrics)))
+        gap = 0.34
+        col_w = (CW - gap * (n - 1)) / n
+        for i, metric in enumerate(metrics[:4]):
+            if isinstance(metric, dict):
+                val = str(metric.get('value', ''))
+                label = str(metric.get('label', ''))
+                note = str(metric.get('note', metric.get('desc', '')))
+            else:
+                val, label, note = (list(metric) + ['', '', ''])[:3]
+                val, label, note = str(val), str(label), str(note)
+            x = CL + i * (col_w + gap)
+            self._rect(slide, x, ct + 0.22, col_w, 0.03,
+                       fill=C_TEAL if i == 0 else C_MGRAY)
+            val_size = 60 if len(val) <= 4 else 48 if len(val) <= 6 else 38
+            val_color = C_WHITE if dark else C_NAVY
+            self._textbox(slide, x, ct + 0.72, col_w, 1.05,
+                          val, size=val_size, bold=True,
+                          color=val_color, font=F_ACCENT,
+                          align=PP_ALIGN.LEFT, wrap=False)
+            self._textbox(slide, x, ct + 1.85, col_w, 0.34,
+                          label.upper(), size=10, bold=True,
+                          color=C_TEAL if dark else C_GRAY,
+                          font=F_ACCENT, align=PP_ALIGN.LEFT,
+                          wrap=False)
+            self._rich_textbox(slide, x, ct + 2.30, col_w, ch - 2.25,
+                               note, size=13,
+                               color=C_LGRAY if dark else C_GRAY,
+                               font=F_BODY)
+        self._attach_notes(slide, notes)
+        return slide
+
+    def pipeline(self, title: str, steps: list,
+                 dark: bool = False, variant: str = 'soft-systems',
+                 kicker: str = '', lead: str = '',
+                 meta_left: str = '', meta_right: str = '',
+                 foot_left: str = '', foot_right: str = '',
+                 notes: str = ''):
+        """Sequential 3-6 step process with clear stage rhythm."""
+        slide = self._new_slide('custom slide1-light', dark=dark,
+                                density='compact')
+        self._title(slide, title, dark=dark, eyebrow=kicker)
+        self._subtitle_block(slide, lead, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
+        ct, _, ch = self._content_bounds(lead, '', None)
+        n = max(1, min(6, len(steps)))
+        gap = 0.18
+        col_w = (CW - gap * (n - 1)) / n
+        y_mid = ct + 0.78
+        self._hline(slide, CL, y_mid, CW, C_MGRAY if not dark else C_TEAL, 0.018)
+        for i, step in enumerate(steps[:6]):
+            title_s = step.get('title', '') if isinstance(step, dict) else str(step)
+            body_s = step.get('body', '') if isinstance(step, dict) else ''
+            x = CL + i * (col_w + gap)
+            self._rect(slide, x, y_mid - 0.08, 0.16, 0.16,
+                       fill=C_TEAL, radius=0.03)
+            self._textbox(slide, x, ct + 0.18, col_w, 0.25,
+                          f'STEP {i+1:02d}', size=9, bold=True,
+                          color=C_TEAL, font=F_ACCENT,
+                          align=PP_ALIGN.LEFT, wrap=False)
+            head_color = C_WHITE if dark else C_NAVY
+            body_color = C_LGRAY if dark else C_GRAY
+            self._textbox(slide, x, y_mid + 0.34, col_w, 0.58,
+                          title_s, size=16, bold=True,
+                          color=head_color, font=F_BODY,
+                          align=PP_ALIGN.LEFT)
+            self._rich_textbox(slide, x, y_mid + 1.00, col_w,
+                               ch - 1.05, body_s, size=12,
+                               color=body_color, font=F_BODY)
+        self._attach_notes(slide, notes)
+        return slide
+
+    def rowlines(self, title: str, rows: list,
+                 dark: bool = False, variant: str = 'editorial',
+                 kicker: str = '', lead: str = '',
+                 meta_left: str = '', meta_right: str = '',
+                 foot_left: str = '', foot_right: str = '',
+                 notes: str = ''):
+        """Editorial row list for asset protocols, principles, or findings."""
+        slide = self._new_slide('custom slide1-light', dark=dark,
+                                density='compact')
+        self._title(slide, title, dark=dark, eyebrow=kicker)
+        self._subtitle_block(slide, lead, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
+        ct, _, ch = self._content_bounds(lead, '', None)
+        n = max(1, len(rows))
+        row_h = min(0.68, ch / n)
+        key_color = C_WHITE if dark else C_NAVY
+        val_color = C_LGRAY if dark else C_BLACK
+        meta_color = C_TEAL if dark else C_GRAY
+        for i, row in enumerate(rows):
+            if isinstance(row, dict):
+                key = row.get('key', row.get('label', ''))
+                val = row.get('value', row.get('body', ''))
+                meta = row.get('meta', '')
+            else:
+                key, val, meta = (list(row) + ['', '', ''])[:3]
+            y = ct + i * row_h
+            self._hline(slide, CL, y, CW, C_MGRAY if not dark else C_TEAL, 0.012)
+            self._textbox(slide, CL, y + 0.15, 2.10, 0.35,
+                          str(key), size=15, bold=True,
+                          color=key_color, font=F_BODY,
+                          align=PP_ALIGN.LEFT)
+            self._rich_textbox(slide, CL + 2.35, y + 0.14, 6.3, 0.40,
+                               str(val), size=13, color=val_color,
+                               font=F_BODY)
+            if meta:
+                self._textbox(slide, 9.80, y + 0.15, 2.45, 0.35,
+                              str(meta).upper(), size=9, bold=True,
+                              color=meta_color, font=F_ACCENT,
+                              align=PP_ALIGN.RIGHT, wrap=False)
+        self._hline(slide, CL, ct + n * row_h, CW,
+                    C_MGRAY if not dark else C_TEAL, 0.012)
+        self._attach_notes(slide, notes)
+        return slide
+
+    def quote_editorial(self, text: str, attribution: str = '',
+                        title: str = '', dark: bool = True,
+                        variant: str = 'executive-minimal',
+                        kicker: str = '', lead: str = '',
+                        meta_left: str = '', meta_right: str = '',
+                        foot_left: str = '', foot_right: str = '',
+                        notes: str = ''):
+        """Large editorial quote for executive pauses and bottom-line pages."""
+        slide = self._new_slide('custom slide1-light', dark=dark,
+                                density='compact')
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
+        if kicker:
+            self._textbox(slide, CL, 1.02, 6.0, 0.30,
+                          kicker.upper(), size=11, bold=True,
+                          color=C_TEAL, font=F_ACCENT,
+                          align=PP_ALIGN.LEFT, wrap=False)
+        if title:
+            self._title(slide, title, dark=dark)
+        q_color = C_WHITE if dark else C_NAVY
+        lines = [line for line in text.split('\n') if line.strip()]
+        y = 1.75 if kicker else 1.42
+        self._para_textbox(
+            slide, CL, y, 10.7, 3.6,
+            [{'text': line, 'size': 30, 'bold': True,
+              'color': q_color, 'font': F_BODY,
+              'align': PP_ALIGN.LEFT, 'space_after': 14}
+             for line in lines]
+        )
+        self._rect(slide, CL, 5.38, 1.35, 0.05, fill=C_TEAL)
+        if attribution:
+            self._textbox(slide, CL, 5.56, 9.0, 0.34,
+                          attribution, size=11,
+                          color=C_LGRAY if dark else C_GRAY,
+                          font=F_ACCENT, align=PP_ALIGN.LEFT)
+        if lead:
+            self._rich_textbox(slide, CL, 6.00, 8.5, 0.42,
+                               lead, size=12,
+                               color=C_LGRAY if dark else C_GRAY,
+                               font=F_BODY)
+        self._attach_notes(slide, notes)
+        return slide
+
+    def lead_image(self, title: str, lead: str, img_path: str = None,
+                   dark: bool = False, variant: str = 'image-led',
+                   kicker: str = '', caption: str = '',
+                   meta_left: str = '', meta_right: str = '',
+                   foot_left: str = '', foot_right: str = '',
+                   notes: str = ''):
+        """Left editorial lead + right image with top-preserving fit."""
+        slide = self._new_slide('custom slide1-light', dark=dark,
+                                density='compact')
+        self._title(slide, title, dark=dark, eyebrow=kicker)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
+        text_color = C_LGRAY if dark else C_BLACK
+        self._rich_textbox(slide, CL, CT + 0.20, 3.95, 2.2,
+                           lead, size=18, color=text_color,
+                           font=F_BODY)
+        self._rect(slide, CL, 5.30, 1.0, 0.04, fill=C_TEAL)
+        img_l = CL + 4.45
+        img_w = CW - 4.45
+        img_t = CT
+        img_h = 4.65
+        if not self._add_fit_picture(slide, img_path, img_l, img_t,
+                                     img_w, img_h, fit='cover',
+                                     valign='top'):
+            self._placeholder_frame(slide, img_l, img_t, img_w, img_h,
+                                    'IMAGE / UI / SCENE', dark)
+        if caption:
+            self._textbox(slide, img_l, img_t + img_h + 0.10, img_w, 0.28,
+                          caption, size=10,
+                          color=C_LGRAY if dark else C_GRAY,
+                          font=F_ACCENT, align=PP_ALIGN.RIGHT)
+        self._attach_notes(slide, notes)
+        return slide
+
+    def image_grid(self, title: str, images: list,
+                   dark: bool = False, variant: str = 'asset-grid',
+                   kicker: str = '', lead: str = '',
+                   meta_left: str = '', meta_right: str = '',
+                   foot_left: str = '', foot_right: str = '',
+                   notes: str = ''):
+        """2×2 / 3×2 image grid with consistent top-preserving crops."""
+        slide = self._new_slide('custom slide1-light', dark=dark,
+                                density='compact')
+        self._title(slide, title, dark=dark, eyebrow=kicker)
+        self._subtitle_block(slide, lead, dark)
+        self._meta_footer(slide, meta_left, meta_right,
+                          foot_left, foot_right, dark)
+        ct, _, ch = self._content_bounds(lead, '', None)
+        n = max(1, min(6, len(images)))
+        cols = 3 if n > 4 else 2
+        rows = math.ceil(n / cols)
+        gap = 0.18
+        cell_w = (CW - gap * (cols - 1)) / cols
+        cell_h = (ch - gap * (rows - 1)) / rows
+        for i, item in enumerate(images[:6]):
+            if isinstance(item, dict):
+                path = item.get('path')
+                label = item.get('label', f'Asset {i+1:02d}')
+            else:
+                path = item
+                label = f'Asset {i+1:02d}'
+            col = i % cols
+            row = i // cols
+            x = CL + col * (cell_w + gap)
+            y = ct + row * (cell_h + gap)
+            img_h = cell_h - 0.34
+            if not self._add_fit_picture(slide, path, x, y, cell_w,
+                                         img_h, fit='cover',
+                                         valign='top'):
+                self._placeholder_frame(slide, x, y, cell_w, img_h,
+                                        label, dark)
+            self._textbox(slide, x, y + img_h + 0.07, cell_w, 0.24,
+                          str(label).upper(), size=8, bold=True,
+                          color=C_LGRAY if dark else C_GRAY,
+                          font=F_ACCENT, align=PP_ALIGN.LEFT,
+                          wrap=False)
+        self._attach_notes(slide, notes)
         return slide
 
     # ── Compositional layouts (strategy-memo patterns) ────────────────────────

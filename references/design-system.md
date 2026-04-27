@@ -148,3 +148,67 @@ Westwell solution decks are **presentation-style, not document-style**. The visu
 4. Title + architecture/flow diagram (image fills content area)
 5. Dark slide + large KPI numbers + supporting labels
 6. TOC: full-bleed background photo + 2×3 rounded card grid
+
+---
+
+## Visual Grammar Extensions
+
+The 2026 Guizang/Huashu refactor adds PPTX-native editorial layouts while
+keeping Westwell blue/teal and the existing `.potx` template.
+
+### New Layout Families
+
+| Method | Role | Visual influence |
+|---|---|---|
+| `hero()` | Chapter/thesis anchor, visual grammar preview | Build / executive minimal |
+| `big_numbers()` | Data proof and benchmark pages | Pentagram / data editorial |
+| `pipeline()` | Sequential platform or rollout logic | Takram / soft systems |
+| `rowlines()` | Protocols, principles, findings, asset lists | Pentagram editorial rows |
+| `quote_editorial()` | Executive pause or bottom-line page | Build minimalism |
+| `lead_image()` | Left thesis + right visual proof | Magazine image-led layout |
+| `image_grid()` | Multiple assets with consistent crop logic | Editorial asset board |
+
+### Shared Editorial Parameters
+
+New visual layouts accept:
+
+| Parameter | Use |
+|---|---|
+| `kicker` | Short mono label above the title; alias for `eyebrow` in compatible contexts |
+| `lead` | One-sentence explanation below/near the title |
+| `meta_left` / `meta_right` | Quiet top chrome; do not repeat the title |
+| `foot_left` / `foot_right` | Quiet bottom chrome for source/section/page context |
+| `variant` | Layout attitude, not color theme; examples: `data`, `executive-minimal`, `soft-systems` |
+
+These parameters should remain quiet. Westwell's master logo and brand zone
+stay primary.
+
+### Image Crop Rule
+
+For screenshots and product/site imagery, keep the top-critical information
+visible. `lead_image()` and `image_grid()` use top-preserving image placement
+or explicit placeholders. Avoid arbitrary center crops that remove UI headers,
+vehicle tops, crane booms, or site context.
+
+### Big-Number Discipline
+
+`big_numbers()` exists for pages where the audience should remember a metric.
+Use 2-4 metrics, ideally 3. Each metric should be:
+
+- value: large, short, memorable
+- label: 2-5 words
+- note: one evidence line, not a paragraph
+
+If the page needs detailed explanation, pair `big_numbers()` with a later
+`rowlines()` or analytic chart page instead of crowding the KPI slide.
+
+### Density Rhythm
+
+For 5+ slide decks:
+
+- Set a visual grammar before batch generation.
+- Alternate sparse and dense pages.
+- Insert an anchor page (`hero`, `quote_editorial`, `statement`, `chapter`) at
+  least every 3-4 content pages.
+- Use `rowlines()` or `pipeline()` to avoid defaulting every structured page
+  to rounded cards.
